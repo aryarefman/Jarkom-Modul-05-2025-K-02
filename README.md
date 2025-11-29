@@ -71,60 +71,114 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
      - Osgiliath
         ```
         #!/bin/bash
-        
-        # Konfigurasi Router Osgiliath (Router Pusat)
+        # Konfigurasi Osgiliath dengan NAT - Manual IP Setup
         
         echo "========================================="
-        echo "Configuring Osgiliath Router"
+        echo "Configuring Osgiliath Router with Internet (Manual)"
         echo "========================================="
         
         # Enable IP forwarding
-        echo "Enabling IP forwarding..."
         echo 1 > /proc/sys/net/ipv4/ip_forward
         sysctl -w net.ipv4.ip_forward=1
         
-        # Konfigurasi IP untuk setiap interface
-        echo "Configuring interfaces..."
+        # Konfigurasi semua interface
+        ip link set eth0 up
         ip link set eth1 up
         ip link set eth2 up
         ip link set eth3 up
         
+        ip addr flush dev eth0
         ip addr flush dev eth1
         ip addr flush dev eth2
         ip addr flush dev eth3
         
+        # Konfigurasi eth0 untuk NAT
+        # Coba beberapa kemungkinan network NAT GNS3
+        echo "Trying to configure eth0 for NAT..."
+        
+        # Coba network 192.168.122.0/24 (default virbr0)
+        ip addr add 192.168.122.100/24 dev eth0
+        ip route add default via 192.168.122.1 dev eth0
+        
+        # Setup DNS
+        echo "nameserver 8.8.8.8" > /etc/resolv.conf
+        echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        
+        # Test koneksi
+        echo "Testing NAT gateway..."
+        ping -c 2 192.168.122.1
+        
+        if [ $? -ne 0 ]; then
+            echo "Network 192.168.122.0/24 failed, trying 10.0.2.0/24..."
+            ip addr flush dev eth0
+            ip route del default 2>/dev/null
+            
+            ip addr add 10.0.2.100/24 dev eth0
+            ip route add default via 10.0.2.2 dev eth0
+            
+            ping -c 2 10.0.2.2
+            
+            if [ $? -ne 0 ]; then
+                echo "Network 10.0.2.0/24 failed, trying 192.168.1.0/24..."
+                ip addr flush dev eth0
+                ip route del default 2>/dev/null
+                
+                ip addr add 192.168.1.100/24 dev eth0
+                ip route add default via 192.168.1.1 dev eth0
+                
+                ping -c 2 192.168.1.1
+            fi
+        fi
+        
+        # Konfigurasi interface internal
         ip addr add 192.212.0.29/30 dev eth2  # ke Moria (A9)
         ip addr add 192.212.0.33/30 dev eth1  # ke Rivendell (A10)
         ip addr add 192.212.0.37/30 dev eth3  # ke Minastir (A11)
         
-        # Routing ke subnet lain
-        echo "Setting up routes..."
+        # Setup NAT masquerading
+        echo "Setting up NAT masquerading..."
+        iptables -t nat -F  # Flush existing rules
+        iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
         
-        # Ke arah Moria
-        ip route add 192.212.0.16/30 via 192.212.0.30 dev eth2  # A1 (IronHills)
-        ip route add 192.212.0.24/30 via 192.212.0.30 dev eth2  # A8 (Moria-Wilderland)
-        ip route add 192.212.0.64/26 via 192.212.0.30 dev eth2  # A2 (Durin)
-        ip route add 192.212.0.56/29 via 192.212.0.30 dev eth2  # A3 (Khamul)
+        # Allow forwarding
+        iptables -F FORWARD
+        iptables -P FORWARD ACCEPT
+        iptables -A FORWARD -i eth0 -o eth1 -m state --state RELATED,ESTABLISHED -j ACCEPT
+        iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT
+        iptables -A FORWARD -i eth0 -o eth2 -m state --state RELATED,ESTABLISHED -j ACCEPT
+        iptables -A FORWARD -i eth2 -o eth0 -j ACCEPT
+        iptables -A FORWARD -i eth0 -o eth3 -m state --state RELATED,ESTABLISHED -j ACCEPT
+        iptables -A FORWARD -i eth3 -o eth0 -j ACCEPT
         
-        # Ke arah Rivendell
-        ip route add 192.212.0.48/29 via 192.212.0.34 dev eth1  # A4 (Vilya & Narya)
+        # Routing ke subnet internal
+        echo "Setting up internal routes..."
+        ip route add 192.212.0.16/30 via 192.212.0.30 dev eth2  # A1
+        ip route add 192.212.0.24/30 via 192.212.0.30 dev eth2  # A8
+        ip route add 192.212.0.64/26 via 192.212.0.30 dev eth2  # A2
+        ip route add 192.212.0.56/29 via 192.212.0.30 dev eth2  # A3
+        ip route add 192.212.0.48/29 via 192.212.0.34 dev eth1  # A4
+        ip route add 192.212.1.0/24 via 192.212.0.38 dev eth3   # A5
+        ip route add 192.212.0.40/30 via 192.212.0.38 dev eth3  # A12
+        ip route add 192.212.0.20/30 via 192.212.0.38 dev eth3  # A6
+        ip route add 192.212.0.44/30 via 192.212.0.38 dev eth3  # A13
+        ip route add 192.212.0.128/25 via 192.212.0.38 dev eth3 # A7
         
-        # Ke arah Minastir
-        ip route add 192.212.1.0/24 via 192.212.0.38 dev eth3   # A5 (Elendil & Isildur)
-        ip route add 192.212.0.40/30 via 192.212.0.38 dev eth3  # A12 (Minastir-Pelargir)
-        ip route add 192.212.0.20/30 via 192.212.0.38 dev eth3  # A6 (Palantir)
-        ip route add 192.212.0.44/30 via 192.212.0.38 dev eth3  # A13 (Pelargir-AnduinBanks)
-        ip route add 192.212.0.128/25 via 192.212.0.38 dev eth3 # A7 (Gilgalad & Cirdan)
-        
-        echo ""
-        echo "Osgiliath configuration completed"
         echo ""
         echo "========================================="
+        echo "Configuration completed!"
+        echo "========================================="
+        echo ""
         echo "Interface Status:"
         ip -br addr show
         echo ""
         echo "Routing Table:"
         ip route show
+        echo ""
+        echo "Testing Internet:"
+        ping -c 3 8.8.8.8
+        echo ""
+        echo "Testing DNS:"
+        ping -c 3 google.com
         ```
         
      - Moria
