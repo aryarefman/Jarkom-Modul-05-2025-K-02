@@ -210,6 +210,11 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         ip addr add 192.212.0.17/30 dev eth1  # ke Switch2 -> IronHills (A1)
         ip addr add 192.212.0.25/30 dev eth2  # ke Wilderland (A8)
         
+        # DNS Configuration
+        echo "Configuring DNS..."
+        echo "nameserver 8.8.8.8" > /etc/resolv.conf
+        echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        
         # Routing
         echo "Setting up routes..."
         
@@ -229,6 +234,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         echo ""
         echo "Routing Table:"
         ip route show
+        echo ""
+        echo "DNS Configuration:"
+        cat /etc/resolv.conf
+        echo ""
+        echo "Testing internet:"
+        ping -c 3 8.8.8.8
+        echo ""
+        echo "Testing DNS:"
+        ping -c 3 google.com
         echo "========================================="
         ```
         
@@ -258,6 +272,11 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         ip addr add 192.212.0.34/30 dev eth0  # ke Osgiliath (A10)
         ip addr add 192.212.0.49/29 dev eth1  # ke Switch1 (A4) -> Vilya & Narya
         
+        # DNS Configuration
+        echo "Configuring DNS..."
+        echo "nameserver 8.8.8.8" > /etc/resolv.conf
+        echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        
         # Routing
         echo "Setting up routes..."
         
@@ -273,6 +292,18 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         echo ""
         echo "Routing Table:"
         ip route show
+        echo ""
+        echo "DNS Configuration:"
+        cat /etc/resolv.conf
+        echo ""
+        echo "Testing connectivity to Osgiliath:"
+        ping -c 3 192.212.0.33
+        echo ""
+        echo "Testing internet:"
+        ping -c 3 8.8.8.8
+        echo ""
+        echo "Testing DNS resolution:"
+        ping -c 3 google.com
         echo "========================================="
         ```
 
@@ -305,6 +336,11 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         ip addr add 192.212.0.41/30 dev eth1  # ke Pelargir (A12)
         ip addr add 192.212.1.1/24 dev eth2   # ke Switch4 (A5) -> Elendil & Isildur
         
+        # DNS Configuration
+        echo "Configuring DNS..."
+        echo "nameserver 8.8.8.8" > /etc/resolv.conf
+        echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        
         # Routing
         echo "Setting up routes..."
         
@@ -325,6 +361,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         echo ""
         echo "Routing Table:"
         ip route show
+        echo ""
+        echo "DNS Configuration:"
+        cat /etc/resolv.conf
+        echo ""
+        echo "Testing internet:"
+        ping -c 3 8.8.8.8
+        echo ""
+        echo "Testing DNS:"
+        ping -c 3 google.com
         echo "========================================="
         ```
         
@@ -357,6 +402,11 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         ip addr add 192.212.0.45/30 dev eth1  # ke AnduinBanks (A13)
         ip addr add 192.212.0.21/30 dev eth2  # ke Palantir (A6)
         
+        # DNS Configuration
+        echo "Configuring DNS..."
+        echo "nameserver 8.8.8.8" > /etc/resolv.conf
+        echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        
         # Routing
         echo "Setting up routes..."
         
@@ -375,6 +425,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         echo ""
         echo "Routing Table:"
         ip route show
+        echo ""
+        echo "DNS Configuration:"
+        cat /etc/resolv.conf
+        echo ""
+        echo "Testing internet:"
+        ping -c 3 8.8.8.8
+        echo ""
+        echo "Testing DNS:"
+        ping -c 3 google.com
         echo "========================================="
         ```
 
@@ -404,6 +463,11 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         ip addr add 192.212.0.46/30 dev eth0  # ke Pelargir (A13)
         ip addr add 192.212.0.129/25 dev eth1 # ke Switch5 (A7) -> Gilgalad & Cirdan
         
+        # DNS Configuration
+        echo "Configuring DNS..."
+        echo "nameserver 8.8.8.8" > /etc/resolv.conf
+        echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        
         # Routing
         echo "Setting up routes..."
         
@@ -419,6 +483,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         echo ""
         echo "Routing Table:"
         ip route show
+        echo ""
+        echo "DNS Configuration:"
+        cat /etc/resolv.conf
+        echo ""
+        echo "Testing internet:"
+        ping -c 3 8.8.8.8
+        echo ""
+        echo "Testing DNS:"
+        ping -c 3 google.com
         echo "========================================="
         ```
 
@@ -451,6 +524,11 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         ip addr add 192.212.0.65/26 dev eth1  # ke Durin (A2)
         ip addr add 192.212.0.57/29 dev eth2  # ke Switch3 (A3) -> Khamul
         
+        # DNS Configuration
+        echo "Configuring DNS..."
+        echo "nameserver 8.8.8.8" > /etc/resolv.conf
+        echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        
         # Routing
         echo "Setting up routes..."
         
@@ -466,6 +544,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         echo ""
         echo "Routing Table:"
         ip route show
+        echo ""
+        echo "DNS Configuration:"
+        cat /etc/resolv.conf
+        echo ""
+        echo "Testing internet:"
+        ping -c 3 8.8.8.8
+        echo ""
+        echo "Testing DNS:"
+        ping -c 3 google.com
         echo "========================================="
         ```
 
