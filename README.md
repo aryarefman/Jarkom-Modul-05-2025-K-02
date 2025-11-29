@@ -1690,26 +1690,43 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Configuring Durin Client (DHCP)"
       echo "========================================="
       
+      # Install DHCP client if not present
+      echo "Checking for DHCP client..."
+      if ! command -v dhclient >/dev/null 2>&1; then
+          echo "Installing DHCP client..."
+          apt-get update
+          apt-get install -y isc-dhcp-client
+      fi
+      
       # Backup konfigurasi lama
       cp /etc/network/interfaces /etc/network/interfaces.backup 2>/dev/null
+      
+      # Kill existing DHCP client processes
+      killall dhclient 2>/dev/null
+      killall udhcpc 2>/dev/null
       
       # Hapus konfigurasi IP statis
       ip addr flush dev eth0 2>/dev/null
       
+      # Bring interface down then up
+      ip link set eth0 down
+      sleep 1
+      ip link set eth0 up
+      sleep 2
+      
       # Konfigurasi untuk menggunakan DHCP
       cat > /etc/network/interfaces << 'EOF'
-      source /etc/network/interfaces.d/*
-      
       auto lo
       iface lo inet loopback
       
       auto eth0
       iface eth0 inet dhcp
-          hostname durin
       EOF
       
-      # Restart networking
-      systemctl restart networking
+      # Request DHCP lease
+      echo "Requesting DHCP lease..."
+      dhclient -v eth0 2>&1
+      
       sleep 3
       
       echo ""
@@ -1718,12 +1735,21 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Interface Status:"
       ip -br addr show eth0
       echo ""
-      echo "Waiting for DHCP lease..."
-      sleep 5
-      dhclient eth0 2>/dev/null
-      sleep 2
-      echo "Final Interface Status:"
-      ip -br addr show eth0
+      echo "Detailed Interface Info:"
+      ip addr show eth0
+      echo ""
+      echo "Routing Table:"
+      ip route show
+      echo ""
+      echo "DNS Configuration:"
+      cat /etc/resolv.conf 2>/dev/null | grep nameserver
+      echo ""
+      echo "DHCP Lease Info:"
+      cat /var/lib/dhcp/dhclient.leases 2>/dev/null | tail -20
+      echo ""
+      echo "Testing connectivity:"
+      ping -c 2 192.212.0.50 2>/dev/null && echo "✓ Can reach DHCP server (Vilya)" || echo "✗ Cannot reach DHCP server"
+      ping -c 2 192.212.0.65 2>/dev/null && echo "✓ Can reach gateway" || echo "✗ Cannot reach gateway"
       ```
 
     - Khamul (Client - DHCP) - TRAITOR
@@ -1737,26 +1763,43 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "⚠️  WARNING: This is the TRAITOR's subnet!"
       echo "========================================="
       
+      # Install DHCP client if not present
+      echo "Checking for DHCP client..."
+      if ! command -v dhclient >/dev/null 2>&1; then
+          echo "Installing DHCP client..."
+          apt-get update
+          apt-get install -y isc-dhcp-client
+      fi
+      
       # Backup konfigurasi lama
       cp /etc/network/interfaces /etc/network/interfaces.backup 2>/dev/null
+      
+      # Kill existing DHCP client processes
+      killall dhclient 2>/dev/null
+      killall udhcpc 2>/dev/null
       
       # Hapus konfigurasi IP statis
       ip addr flush dev eth0 2>/dev/null
       
+      # Bring interface down then up
+      ip link set eth0 down
+      sleep 1
+      ip link set eth0 up
+      sleep 2
+      
       # Konfigurasi untuk menggunakan DHCP
       cat > /etc/network/interfaces << 'EOF'
-      source /etc/network/interfaces.d/*
-      
       auto lo
       iface lo inet loopback
       
       auto eth0
       iface eth0 inet dhcp
-          hostname khamul
       EOF
       
-      # Restart networking
-      systemctl restart networking
+      # Request DHCP lease
+      echo "Requesting DHCP lease..."
+      dhclient -v eth0 2>&1
+      
       sleep 3
       
       echo ""
@@ -1766,12 +1809,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Interface Status:"
       ip -br addr show eth0
       echo ""
-      echo "Waiting for DHCP lease..."
-      sleep 5
-      dhclient eth0 2>/dev/null
-      sleep 2
-      echo "Final Interface Status:"
-      ip -br addr show eth0
+      echo "Detailed Interface Info:"
+      ip addr show eth0
+      echo ""
+      echo "Routing Table:"
+      ip route show
+      echo ""
+      echo "Testing connectivity:"
+      ping -c 2 192.212.0.50 2>/dev/null && echo "✓ Can reach DHCP server (Vilya)" || echo "✗ Cannot reach DHCP server"
+      ping -c 2 192.212.0.57 2>/dev/null && echo "✓ Can reach gateway" || echo "✗ Cannot reach gateway"
       ```
 
     - Elendil (Client - DHCP)
@@ -1783,26 +1829,43 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Configuring Elendil Client (DHCP)"
       echo "========================================="
       
+      # Install DHCP client if not present
+      echo "Checking for DHCP client..."
+      if ! command -v dhclient >/dev/null 2>&1; then
+          echo "Installing DHCP client..."
+          apt-get update
+          apt-get install -y isc-dhcp-client
+      fi
+      
       # Backup konfigurasi lama
       cp /etc/network/interfaces /etc/network/interfaces.backup 2>/dev/null
+      
+      # Kill existing DHCP client processes
+      killall dhclient 2>/dev/null
+      killall udhcpc 2>/dev/null
       
       # Hapus konfigurasi IP statis
       ip addr flush dev eth0 2>/dev/null
       
+      # Bring interface down then up
+      ip link set eth0 down
+      sleep 1
+      ip link set eth0 up
+      sleep 2
+      
       # Konfigurasi untuk menggunakan DHCP
       cat > /etc/network/interfaces << 'EOF'
-      source /etc/network/interfaces.d/*
-      
       auto lo
       iface lo inet loopback
       
       auto eth0
       iface eth0 inet dhcp
-          hostname elendil
       EOF
       
-      # Restart networking
-      systemctl restart networking
+      # Request DHCP lease
+      echo "Requesting DHCP lease..."
+      dhclient -v eth0 2>&1
+      
       sleep 3
       
       echo ""
@@ -1811,12 +1874,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Interface Status:"
       ip -br addr show eth0
       echo ""
-      echo "Waiting for DHCP lease..."
-      sleep 5
-      dhclient eth0 2>/dev/null
-      sleep 2
-      echo "Final Interface Status:"
-      ip -br addr show eth0
+      echo "Detailed Interface Info:"
+      ip addr show eth0
+      echo ""
+      echo "Routing Table:"
+      ip route show
+      echo ""
+      echo "Testing connectivity:"
+      ping -c 2 192.212.0.50 2>/dev/null && echo "✓ Can reach DHCP server (Vilya)" || echo "✗ Cannot reach DHCP server"
+      ping -c 2 192.212.1.1 2>/dev/null && echo "✓ Can reach gateway" || echo "✗ Cannot reach gateway"
       ```
 
     - Isildur (Client - DHCP)
@@ -1828,26 +1894,43 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Configuring Isildur Client (DHCP)"
       echo "========================================="
       
+      # Install DHCP client if not present
+      echo "Checking for DHCP client..."
+      if ! command -v dhclient >/dev/null 2>&1; then
+          echo "Installing DHCP client..."
+          apt-get update
+          apt-get install -y isc-dhcp-client
+      fi
+      
       # Backup konfigurasi lama
       cp /etc/network/interfaces /etc/network/interfaces.backup 2>/dev/null
+      
+      # Kill existing DHCP client processes
+      killall dhclient 2>/dev/null
+      killall udhcpc 2>/dev/null
       
       # Hapus konfigurasi IP statis
       ip addr flush dev eth0 2>/dev/null
       
+      # Bring interface down then up
+      ip link set eth0 down
+      sleep 1
+      ip link set eth0 up
+      sleep 2
+      
       # Konfigurasi untuk menggunakan DHCP
       cat > /etc/network/interfaces << 'EOF'
-      source /etc/network/interfaces.d/*
-      
       auto lo
       iface lo inet loopback
       
       auto eth0
       iface eth0 inet dhcp
-          hostname isildur
       EOF
       
-      # Restart networking
-      systemctl restart networking
+      # Request DHCP lease
+      echo "Requesting DHCP lease..."
+      dhclient -v eth0 2>&1
+      
       sleep 3
       
       echo ""
@@ -1856,12 +1939,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Interface Status:"
       ip -br addr show eth0
       echo ""
-      echo "Waiting for DHCP lease..."
-      sleep 5
-      dhclient eth0 2>/dev/null
-      sleep 2
-      echo "Final Interface Status:"
-      ip -br addr show eth0
+      echo "Detailed Interface Info:"
+      ip addr show eth0
+      echo ""
+      echo "Routing Table:"
+      ip route show
+      echo ""
+      echo "Testing connectivity:"
+      ping -c 2 192.212.0.50 2>/dev/null && echo "✓ Can reach DHCP server (Vilya)" || echo "✗ Cannot reach DHCP server"
+      ping -c 2 192.212.1.1 2>/dev/null && echo "✓ Can reach gateway" || echo "✗ Cannot reach gateway"
       ```
       
     - Gilgalad (Client - DHCP)
@@ -1873,26 +1959,43 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Configuring Gilgalad Client (DHCP)"
       echo "========================================="
       
+      # Install DHCP client if not present
+      echo "Checking for DHCP client..."
+      if ! command -v dhclient >/dev/null 2>&1; then
+          echo "Installing DHCP client..."
+          apt-get update
+          apt-get install -y isc-dhcp-client
+      fi
+      
       # Backup konfigurasi lama
       cp /etc/network/interfaces /etc/network/interfaces.backup 2>/dev/null
+      
+      # Kill existing DHCP client processes
+      killall dhclient 2>/dev/null
+      killall udhcpc 2>/dev/null
       
       # Hapus konfigurasi IP statis
       ip addr flush dev eth0 2>/dev/null
       
+      # Bring interface down then up
+      ip link set eth0 down
+      sleep 1
+      ip link set eth0 up
+      sleep 2
+      
       # Konfigurasi untuk menggunakan DHCP
       cat > /etc/network/interfaces << 'EOF'
-      source /etc/network/interfaces.d/*
-      
       auto lo
       iface lo inet loopback
       
       auto eth0
       iface eth0 inet dhcp
-          hostname gilgalad
       EOF
       
-      # Restart networking
-      systemctl restart networking
+      # Request DHCP lease
+      echo "Requesting DHCP lease..."
+      dhclient -v eth0 2>&1
+      
       sleep 3
       
       echo ""
@@ -1901,12 +2004,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Interface Status:"
       ip -br addr show eth0
       echo ""
-      echo "Waiting for DHCP lease..."
-      sleep 5
-      dhclient eth0 2>/dev/null
-      sleep 2
-      echo "Final Interface Status:"
-      ip -br addr show eth0
+      echo "Detailed Interface Info:"
+      ip addr show eth0
+      echo ""
+      echo "Routing Table:"
+      ip route show
+      echo ""
+      echo "Testing connectivity:"
+      ping -c 2 192.212.0.50 2>/dev/null && echo "✓ Can reach DHCP server (Vilya)" || echo "✗ Cannot reach DHCP server"
+      ping -c 2 192.212.0.129 2>/dev/null && echo "✓ Can reach gateway" || echo "✗ Cannot reach gateway"
       ```
 
     - Cirdan (Client - DHCP)
@@ -1918,26 +2024,43 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Configuring Cirdan Client (DHCP)"
       echo "========================================="
       
+      # Install DHCP client if not present
+      echo "Checking for DHCP client..."
+      if ! command -v dhclient >/dev/null 2>&1; then
+          echo "Installing DHCP client..."
+          apt-get update
+          apt-get install -y isc-dhcp-client
+      fi
+      
       # Backup konfigurasi lama
       cp /etc/network/interfaces /etc/network/interfaces.backup 2>/dev/null
+      
+      # Kill existing DHCP client processes
+      killall dhclient 2>/dev/null
+      killall udhcpc 2>/dev/null
       
       # Hapus konfigurasi IP statis
       ip addr flush dev eth0 2>/dev/null
       
+      # Bring interface down then up
+      ip link set eth0 down
+      sleep 1
+      ip link set eth0 up
+      sleep 2
+      
       # Konfigurasi untuk menggunakan DHCP
       cat > /etc/network/interfaces << 'EOF'
-      source /etc/network/interfaces.d/*
-      
       auto lo
       iface lo inet loopback
       
       auto eth0
       iface eth0 inet dhcp
-          hostname cirdan
       EOF
       
-      # Restart networking
-      systemctl restart networking
+      # Request DHCP lease
+      echo "Requesting DHCP lease..."
+      dhclient -v eth0 2>&1
+      
       sleep 3
       
       echo ""
@@ -1946,12 +2069,15 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "Interface Status:"
       ip -br addr show eth0
       echo ""
-      echo "Waiting for DHCP lease..."
-      sleep 5
-      dhclient eth0 2>/dev/null
-      sleep 2
-      echo "Final Interface Status:"
-      ip -br addr show eth0
+      echo "Detailed Interface Info:"
+      ip addr show eth0
+      echo ""
+      echo "Routing Table:"
+      ip route show
+      echo ""
+      echo "Testing connectivity:"
+      ping -c 2 192.212.0.50 2>/dev/null && echo "✓ Can reach DHCP server (Vilya)" || echo "✗ Cannot reach DHCP server"
+      ping -c 2 192.212.0.129 2>/dev/null && echo "✓ Can reach gateway" || echo "✗ Cannot reach gateway"
       ```
 
     - Test
