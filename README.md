@@ -1081,3 +1081,605 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         ip -br addr show
         ```
         <img width="633" height="630" alt="image" src="https://github.com/user-attachments/assets/5538d4a8-5f08-46ee-95c8-7dc972a70ef0" />
+
+4. Konfigurasi Service → Dikerjakan setelah Misi 2 No. 1:
+    - Vilya sebagai DHCP Server agar perangkat dalam Khamul, Durin, Gilgalad, Elendil, Cirdan, dan Isildur menerima IP otomatis.
+    - AnduinBanks, Rivendell, dan Minastir berfungsi sebagai DHCP Relay.
+    - Narya sebagai DNS Server.
+    - Palantir dan IronHills sebagai Web Server (Apache/Nginx).
+    - Buat index.html berisikan : "Welcome to {hostname}".
+
+    Penyelesaian: <br>
+    - Vilya (DHCP Server)
+        ```
+        #!/bin/bash
+  
+        echo "========================================="
+        echo "Configuring Vilya as DHCP Server"
+        echo "========================================="
+        
+        # Install DHCP Server
+        apt-get update
+        apt-get install isc-dhcp-server -y
+        
+        # Backup konfigurasi default
+        cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf.backup
+        cp /etc/default/isc-dhcp-server /etc/default/isc-dhcp-server.backup
+        
+        # Konfigurasi interface untuk DHCP Server
+        echo 'INTERFACESv4="eth0"' > /etc/default/isc-dhcp-server
+        
+        # Konfigurasi DHCP Server
+        cat > /etc/dhcp/dhcpd.conf << 'EOF'
+        # DHCP Server Configuration for Alliance Network
+        ddns-update-style none;
+        option domain-name "alliance.local";
+        option domain-name-servers 192.212.0.51; # Narya DNS Server
+        default-lease-time 600;
+        max-lease-time 7200;
+        authoritative;
+        
+        # Subnet A2 - Durin (50 host / Caesar)
+        subnet 192.212.0.64 netmask 255.255.255.192 {
+            range 192.212.0.66 192.212.0.126;
+            option routers 192.212.0.65;
+            option broadcast-address 192.212.0.127;
+            option domain-name-servers 192.212.0.51;
+        }
+        
+        # Subnet A3 - Khamul (5 host / Burnice) - TRAITOR SUBNET
+        subnet 192.212.0.56 netmask 255.255.255.248 {
+            range 192.212.0.58 192.212.0.62;
+            option routers 192.212.0.57;
+            option broadcast-address 192.212.0.63;
+            option domain-name-servers 192.212.0.51;
+        }
+        
+        # Subnet A5 - Elendil & Isildur (231 host / Jane & Policeboo)
+        subnet 192.212.1.0 netmask 255.255.255.0 {
+            range 192.212.1.2 192.212.1.254;
+            option routers 192.212.1.1;
+            option broadcast-address 192.212.1.255;
+            option domain-name-servers 192.212.0.51;
+        }
+        
+        # Subnet A7 - Gilgalad & Cirdan (121 host / Ellen & Lycaon)
+        subnet 192.212.0.128 netmask 255.255.255.128 {
+            range 192.212.0.130 192.212.0.254;
+            option routers 192.212.0.129;
+            option broadcast-address 192.212.0.255;
+            option domain-name-servers 192.212.0.51;
+        }
+        
+        # Subnet A4 - Vilya's own subnet (must be declared)
+        subnet 192.212.0.48 netmask 255.255.255.248 {
+        }
+        EOF
+        
+        # Restart DHCP Server
+        service isc-dhcp-server restart
+        
+        echo ""
+        echo "Vilya DHCP Server configuration completed"
+        echo "========================================="
+        service isc-dhcp-server status
+        ```
+        
+    - Rivendell (DHCP Relay)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Rivendell as DHCP Relay"
+      echo "========================================="
+      
+      # Install DHCP Relay
+      apt-get update
+      apt-get install isc-dhcp-relay -y
+      
+      # Konfigurasi DHCP Relay
+      cat > /etc/default/isc-dhcp-relay << 'EOF'
+      SERVERS="192.212.0.50"
+      INTERFACES="eth0 eth1"
+      OPTIONS=""
+      EOF
+      
+      # Enable IP forwarding (sudah ada tapi pastikan)
+      echo 1 > /proc/sys/net/ipv4/ip_forward
+      
+      # Restart DHCP Relay
+      service isc-dhcp-relay restart
+      
+      echo ""
+      echo "Rivendell DHCP Relay configuration completed"
+      echo "========================================="
+      service isc-dhcp-relay status
+      ```
+      
+    - Minastir (DHCP Relay)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Minastir as DHCP Relay"
+      echo "========================================="
+      
+      # Install DHCP Relay
+      apt-get update
+      apt-get install isc-dhcp-relay -y
+      
+      # Konfigurasi DHCP Relay
+      cat > /etc/default/isc-dhcp-relay << 'EOF'
+      SERVERS="192.212.0.50"
+      INTERFACES="eth0 eth1 eth2"
+      OPTIONS=""
+      EOF
+      
+      # Enable IP forwarding
+      echo 1 > /proc/sys/net/ipv4/ip_forward
+      
+      # Restart DHCP Relay
+      service isc-dhcp-relay restart
+      
+      echo ""
+      echo "Minastir DHCP Relay configuration completed"
+      echo "========================================="
+      service isc-dhcp-relay status
+      ```
+
+    - AnduinBanks (DHCP Relay)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring AnduinBanks as DHCP Relay"
+      echo "========================================="
+      
+      # Install DHCP Relay
+      apt-get update
+      apt-get install isc-dhcp-relay -y
+      
+      # Konfigurasi DHCP Relay
+      cat > /etc/default/isc-dhcp-relay << 'EOF'
+      SERVERS="192.212.0.50"
+      INTERFACES="eth0 eth1"
+      OPTIONS=""
+      EOF
+      
+      # Enable IP forwarding
+      echo 1 > /proc/sys/net/ipv4/ip_forward
+      
+      # Restart DHCP Relay
+      service isc-dhcp-relay restart
+      
+      echo ""
+      echo "AnduinBanks DHCP Relay configuration completed"
+      echo "========================================="
+      service isc-dhcp-relay status
+      ```
+
+    - Narya (DNS Server)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Narya as DNS Server"
+      echo "========================================="
+      
+      # Install BIND9
+      apt-get update
+      apt-get install bind9 bind9utils dnsutils -y
+      
+      # Backup konfigurasi default
+      cp /etc/bind/named.conf.options /etc/bind/named.conf.options.backup
+      
+      # Konfigurasi BIND9
+      cat > /etc/bind/named.conf.options << 'EOF'
+      options {
+          directory "/var/cache/bind";
+      
+          forwarders {
+              8.8.8.8;
+              8.8.4.4;
+          };
+      
+          dnssec-validation auto;
+          listen-on-v6 { any; };
+          
+          allow-query { any; };
+          auth-nxdomain no;
+          listen-on { any; };
+      };
+      EOF
+      
+      # Konfigurasi zone untuk domain lokal
+      cat > /etc/bind/named.conf.local << 'EOF'
+      zone "alliance.local" {
+          type master;
+          file "/etc/bind/db.alliance.local";
+      };
+      
+      zone "212.192.in-addr.arpa" {
+          type master;
+          file "/etc/bind/db.192.212";
+      };
+      EOF
+      
+      # Membuat zone file untuk forward lookup
+      cat > /etc/bind/db.alliance.local << 'EOF'
+      ;
+      ; BIND data file for alliance.local
+      ;
+      $TTL    604800
+      @       IN      SOA     narya.alliance.local. admin.alliance.local. (
+                                    2         ; Serial
+                               604800         ; Refresh
+                                86400         ; Retry
+                              2419200         ; Expire
+                               604800 )       ; Negative Cache TTL
+      ;
+      @       IN      NS      narya.alliance.local.
+      narya   IN      A       192.212.0.51
+      vilya   IN      A       192.212.0.50
+      ironhills IN    A       192.212.0.18
+      palantir IN     A       192.212.0.22
+      EOF
+      
+      # Membuat zone file untuk reverse lookup
+      cat > /etc/bind/db.192.212 << 'EOF'
+      ;
+      ; BIND reverse data file for 192.212.x.x
+      ;
+      $TTL    604800
+      @       IN      SOA     narya.alliance.local. admin.alliance.local. (
+                                    2         ; Serial
+                               604800         ; Refresh
+                                86400         ; Retry
+                              2419200         ; Expire
+                               604800 )       ; Negative Cache TTL
+      ;
+      @       IN      NS      narya.alliance.local.
+      51.0    IN      PTR     narya.alliance.local.
+      50.0    IN      PTR     vilya.alliance.local.
+      18.0    IN      PTR     ironhills.alliance.local.
+      22.0    IN      PTR     palantir.alliance.local.
+      EOF
+      
+      # Set permissions
+      chown -R bind:bind /etc/bind
+      
+      # Restart BIND9
+      service bind9 restart
+      
+      echo ""
+      echo "Narya DNS Server configuration completed"
+      echo "========================================="
+      service bind9 status
+      echo ""
+      echo "Testing DNS resolution:"
+      nslookup narya.alliance.local 127.0.0.1
+      nslookup ironhills.alliance.local 127.0.0.1
+      ```
+
+    - IronHills (Web Server)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring IronHills Web Server"
+      echo "========================================="
+      
+      # Install Apache2
+      apt-get update
+      apt-get install apache2 -y
+      
+      # Buat index.html
+      cat > /var/www/html/index.html << 'EOF'
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Welcome to IronHills</title>
+          <style>
+              body {
+                  font-family: Arial, sans-serif;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  height: 100vh;
+                  margin: 0;
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  color: white;
+              }
+              .container {
+                  text-align: center;
+                  padding: 2rem;
+                  background: rgba(0, 0, 0, 0.3);
+                  border-radius: 10px;
+              }
+              h1 {
+                  font-size: 3rem;
+                  margin: 0;
+              }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <h1>Welcome to IronHills</h1>
+              <p>Alliance Web Server - Moria Region</p>
+          </div>
+      </body>
+      </html>
+      EOF
+      
+      # Start Apache2
+      service apache2 start
+      
+      echo ""
+      echo "IronHills Web Server configuration completed"
+      echo "========================================="
+      service apache2 status
+      echo ""
+      echo "Access at: http://192.212.0.18"
+      ```
+
+    - Palantir (Web Server)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Palantir Web Server"
+      echo "========================================="
+      
+      # Install Apache2
+      apt-get update
+      apt-get install apache2 -y
+      
+      # Buat index.html
+      cat > /var/www/html/index.html << 'EOF'
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Welcome to Palantir</title>
+          <style>
+              body {
+                  font-family: Arial, sans-serif;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  height: 100vh;
+                  margin: 0;
+                  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                  color: white;
+              }
+              .container {
+                  text-align: center;
+                  padding: 2rem;
+                  background: rgba(0, 0, 0, 0.3);
+                  border-radius: 10px;
+              }
+              h1 {
+                  font-size: 3rem;
+                  margin: 0;
+              }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <h1>Welcome to Palantir</h1>
+              <p>Alliance Web Server - Pelargir Region</p>
+          </div>
+      </body>
+      </html>
+      EOF
+      
+      # Start Apache2
+      service apache2 start
+      
+      echo ""
+      echo "Palantir Web Server configuration completed"
+      echo "========================================="
+      service apache2 status
+      echo ""
+      echo "Access at: http://192.212.0.22"
+      ```
+
+    - Durin (Client - DHCP)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Durin Client (DHCP)"
+      echo "========================================="
+      
+      # Hapus konfigurasi IP statis
+      ip addr flush dev eth0
+      
+      # Konfigurasi untuk menggunakan DHCP
+      cat > /etc/network/interfaces << 'EOF'
+      auto eth0
+      iface eth0 inet dhcp
+      EOF
+      
+      # Restart networking
+      ifdown eth0
+      ifup eth0
+      
+      echo ""
+      echo "Durin DHCP configuration completed"
+      echo "========================================="
+      ip -br addr show
+      ```
+
+    - Khamul (Client - DHCP) - TRAITOR
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Khamul Client (DHCP)"
+      echo "⚠️  WARNING: This is the TRAITOR's subnet!"
+      echo "========================================="
+      
+      # Hapus konfigurasi IP statis
+      ip addr flush dev eth0
+      
+      # Konfigurasi untuk menggunakan DHCP
+      cat > /etc/network/interfaces << 'EOF'
+      auto eth0
+      iface eth0 inet dhcp
+      EOF
+      
+      # Restart networking
+      ifdown eth0
+      ifup eth0
+      
+      echo ""
+      echo "Khamul DHCP configuration completed"
+      echo "⚠️  ISOLATE THIS SUBNET TO PREVENT DATA LEAK!"
+      echo "========================================="
+      ip -br addr show
+      ```
+
+    - Elendil (Client - DHCP)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Elendil Client (DHCP)"
+      echo "========================================="
+      
+      # Hapus konfigurasi IP statis
+      ip addr flush dev eth0
+      
+      # Konfigurasi untuk menggunakan DHCP
+      cat > /etc/network/interfaces << 'EOF'
+      auto eth0
+      iface eth0 inet dhcp
+      EOF
+      
+      # Restart networking
+      ifdown eth0
+      ifup eth0
+      
+      echo ""
+      echo "Elendil DHCP configuration completed"
+      echo "========================================="
+      ip -br addr show
+      ```
+
+    - Isildur (Client - DHCP)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Isildur Client (DHCP)"
+      echo "========================================="
+      
+      # Hapus konfigurasi IP statis
+      ip addr flush dev eth0
+      
+      # Konfigurasi untuk menggunakan DHCP
+      cat > /etc/network/interfaces << 'EOF'
+      auto eth0
+      iface eth0 inet dhcp
+      EOF
+      
+      # Restart networking
+      ifdown eth0
+      ifup eth0
+      
+      echo ""
+      echo "Isildur DHCP configuration completed"
+      echo "========================================="
+      ip -br addr show
+      ```
+      
+    - Gilgalad (Client - DHCP)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Gilgalad Client (DHCP)"
+      echo "========================================="
+      
+      # Hapus konfigurasi IP statis
+      ip addr flush dev eth0
+      
+      # Konfigurasi untuk menggunakan DHCP
+      cat > /etc/network/interfaces << 'EOF'
+      auto eth0
+      iface eth0 inet dhcp
+      EOF
+      
+      # Restart networking
+      ifdown eth0
+      ifup eth0
+      
+      echo ""
+      echo "Gilgalad DHCP configuration completed"
+      echo "========================================="
+      ip -br addr show
+      ```
+
+    - Cirdan (Client - DHCP)
+      ```
+      #!/bin/bash
+
+      echo "========================================="
+      echo "Configuring Cirdan Client (DHCP)"
+      echo "========================================="
+      
+      # Hapus konfigurasi IP statis
+      ip addr flush dev eth0
+      
+      # Konfigurasi untuk menggunakan DHCP
+      cat > /etc/network/interfaces << 'EOF'
+      auto eth0
+      iface eth0 inet dhcp
+      EOF
+      
+      # Restart networking
+      ifdown eth0
+      ifup eth0
+      
+      echo ""
+      echo "Cirdan DHCP configuration completed"
+      echo "========================================="
+      ip -br addr show
+      ```
+
+    - Test
+      ```
+      #!/bin/bash
+
+      echo "========================================"
+      echo "ALLIANCE NETWORK COMPLETE TEST"
+      echo "========================================"
+      echo ""
+      
+      echo "=== TESTING DNS SERVER ==="
+      echo "Testing DNS from various clients..."
+      nslookup ironhills.alliance.local 192.212.0.51
+      nslookup palantir.alliance.local 192.212.0.51
+      echo ""
+      
+      echo "=== TESTING WEB SERVERS ==="
+      echo "Testing IronHills Web Server:"
+      curl -s http://192.212.0.18 | grep -i "welcome"
+      echo ""
+      echo "Testing Palantir Web Server:"
+      curl -s http://192.212.0.22 | grep -i "welcome"
+      echo ""
+      
+      echo "=== TESTING DHCP LEASES ==="
+      echo "Checking DHCP leases on Vilya:"
+      cat /var/lib/dhcp/dhcpd.leases | grep "lease" | tail -10
+      echo ""
+      
+      echo "========================================"
+      echo "TEST COMPLETED"
+      echo "========================================"
+      ```
