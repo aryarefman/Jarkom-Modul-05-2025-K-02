@@ -2368,7 +2368,56 @@ Agar jaringan aman, terapkan aturan firewall berikut.
 3. Agar lokasi pasukan tidak bocor, hanya Vilya yang dapat mengakses Narya (DNS).
     - Gunakan nc (netcat) untuk memastikan akses port DNS (53) ini.
     - [Hapus aturan ini setelah pengujian agar internet lancar untuk install paket]
-    - 
+    - Narya
+      ```
+      #!/bin/bash
+      # Narya - DNS access only from Vilya
+      
+      echo "========================================="
+      echo "Rule 3: DNS access only from Vilya"
+      echo "========================================="
+      
+      # Flush existing rules
+      iptables -F INPUT
+      
+      # Allow DNS (port 53) ONLY from Vilya
+      iptables -A INPUT -p tcp --dport 53 -s 192.212.0.50 -j ACCEPT
+      iptables -A INPUT -p udp --dport 53 -s 192.212.0.50 -j ACCEPT
+      
+      # Drop DNS from others
+      iptables -A INPUT -p tcp --dport 53 -j DROP
+      iptables -A INPUT -p udp --dport 53 -j DROP
+      
+      # Allow established connections
+      iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      
+      # Allow other traffic
+      iptables -A INPUT -j ACCEPT
+      
+      echo "✓ Configuration completed!"
+      iptables -L INPUT -n -v
+      ```
+      
+    - Uji
+      - Dari Vilya (192.212.0.50) - Should SUCCESS
+        ```
+        # Test UDP DNS
+        dig @192.212.0.51 narya.alliance.local
+        
+        # Test dengan nslookup
+        nslookup narya.alliance.local 192.212.0.51
+        ```
+        <img width="780" height="719" alt="image" src="https://github.com/user-attachments/assets/7677b108-2b52-4046-8d98-9c66a75f6e1c" />
+        
+      - Dari CLIENT (Durin) - Should FAIL
+        ```
+        # Test UDP DNS
+        dig @192.212.0.51 narya.alliance.local +timeout=3
+        
+        # Test dengan nslookup
+        nslookup narya.alliance.local 192.212.0.51
+        ```
+        <img width="791" height="360" alt="image" src="https://github.com/user-attachments/assets/627b6b3a-3384-40ad-b10d-3ab480752370" />
 
 4. Aktivitas mencurigakan terdeteksi di IronHills. Berdasarkan dekrit Raja, IronHills hanya boleh diakses pada Akhir Pekan (Sabtu & Minggu).
     - Akses hanya diizinkan untuk Faksi Kurcaci & Pengkhianat (Durin & Khamul) serta Faksi Manusia (Elendil & Isildur).
