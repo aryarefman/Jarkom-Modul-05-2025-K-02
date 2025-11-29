@@ -2465,55 +2465,67 @@ Agar jaringan aman, terapkan aturan firewall berikut.
     - Uji
       - Sabtu
         ```
-        # Stop NTP service dulu (jika ada)
+        #!/bin/bash
+        
+        # =========================== #
+        #   Disable Time Sync First   #
+        # =========================== #
         service ntp stop 2>/dev/null
         service systemd-timesyncd stop 2>/dev/null
         
-        # Baru set manual
-        date -s "2025-11-29 14:00:00"  # Saturday
+        # Set manual time
+        date -s "2025-11-29 14:00:00"
         
-        # Verify
+        # Show current date
         date
-        ```
-        ```
+        
+        
         #!/bin/bash
-        # Test IronHills access - Alternative methods
+        # =========================== #
+        #   IronHills Access Testing  #
+        # =========================== #
         
         echo "========================================="
-        echo "Testing IronHills Access"
+        echo "        Testing IronHills Access"
         echo "========================================="
         
-        # Method 1: Using wget
+        # Method 1: wget request
         echo "Method 1: Using wget"
         wget --timeout=5 --tries=1 http://192.212.0.18 -O - 2>&1 | head -20
-        
-        echo ""
-        echo "Method 2: Test port connectivity with timeout"
-        timeout 5 bash -c 'cat < /dev/null > /dev/tcp/192.212.0.18/80' && echo "✓ Port 80 ACCESSIBLE" || echo "✗ Port 80 BLOCKED"
-        
-        echo ""
-        echo "Method 3: Using telnet"
-        (echo "GET / HTTP/1.0"; echo "") | timeout 3 telnet 192.212.0.18 80 2>&1
-        
-        echo ""
-        echo "Current day: $(date +%A)"
-        echo "Current time: $(date +%T)"
         ```
-        <img width="780" height="719" alt="image" src="https://github.com/user-attachments/assets/7677b108-2b52-4046-8d98-9c66a75f6e1c" />
-        
-      - Dari CLIENT (Durin) - Should FAIL
+        <img width="681" height="446" alt="image" src="https://github.com/user-attachments/assets/9529eeae-35bd-4c22-bba9-bc76a8078a21" />
+
+      - Rabu
         ```
-        # Stop NTP service dulu (jika ada)
+        #!/bin/bash
+        
+        # =========================== #
+        #   Disable Time Sync First   #
+        # =========================== #
         service ntp stop 2>/dev/null
         service systemd-timesyncd stop 2>/dev/null
         
-        # Baru set manual
+        # Set manual time
         date -s "2025-01-29 14:00:00"
         
-        # Verify
+        # Show current date
         date
+        
+        
+        #!/bin/bash
+        # =========================== #
+        #   IronHills Access Testing  #
+        # =========================== #
+        
+        echo "========================================="
+        echo "        Testing IronHills Access"
+        echo "========================================="
+        
+        # Method 1: wget request
+        echo "Method 1: Using wget"
+        wget --timeout=5 --tries=1 http://192.212.0.18 -O - 2>&1 | head -20
         ```
-        <img width="791" height="360" alt="image" src="https://github.com/user-attachments/assets/627b6b3a-3384-40ad-b10d-3ab480752370" />
+        <img width="564" height="162" alt="image" src="https://github.com/user-attachments/assets/23604da7-fdd2-4d00-87d3-2bb7143590ce" />
 
 5. Sembari menunggu, pasukan berlatih di server Palantir. Akses dibatasi berdasarkan ras:
     - Faksi Elf (Gilgalad & Cirdan): Boleh akses jam 07.00 - 15.00.
