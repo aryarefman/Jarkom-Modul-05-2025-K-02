@@ -1159,12 +1159,12 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         EOF
         
         # Restart DHCP Server
-        systemctl restart isc-dhcp-server
+        service isc-dhcp-server restart
         
         echo ""
         echo "Vilya DHCP Server configuration completed"
         echo "========================================="
-        systemctl status isc-dhcp-server
+        service isc-dhcp-server status
         echo ""
         echo "Checking DHCP configuration:"
         dhcpd -t -cf /etc/dhcp/dhcpd.conf
@@ -1201,12 +1201,12 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       sysctl -w net.ipv4.ip_forward=1
       
       # Restart DHCP Relay
-      systemctl restart isc-dhcp-relay
+      service isc-dhcp-relay restart
       
       echo ""
       echo "Rivendell DHCP Relay configuration completed"
       echo "========================================="
-      systemctl status isc-dhcp-relay
+      service isc-dhcp-relay status
       echo ""
       echo "Relay Configuration:"
       cat /etc/default/isc-dhcp-relay
@@ -1244,12 +1244,12 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       sysctl -w net.ipv4.ip_forward=1
       
       # Restart DHCP Relay
-      systemctl restart isc-dhcp-relay
+      service isc-dhcp-relay restart
       
       echo ""
       echo "Minastir DHCP Relay configuration completed"
       echo "========================================="
-      systemctl status isc-dhcp-relay
+      service isc-dhcp-relay status
       echo ""
       echo "Relay Configuration:"
       cat /etc/default/isc-dhcp-relay
@@ -1286,12 +1286,12 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       sysctl -w net.ipv4.ip_forward=1
       
       # Restart DHCP Relay
-      systemctl restart isc-dhcp-relay
+      service isc-dhcp-relay restart
       
       echo ""
       echo "AnduinBanks DHCP Relay configuration completed"
       echo "========================================="
-      systemctl status isc-dhcp-relay
+      service isc-dhcp-relay status
       echo ""
       echo "Relay Configuration:"
       cat /etc/default/isc-dhcp-relay
@@ -1576,13 +1576,12 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       EOF
       
       # Start Apache2
-      systemctl restart apache2
-      systemctl enable apache2
+      service apache2 restart
       
       echo ""
       echo "IronHills Web Server configuration completed"
       echo "========================================="
-      systemctl status apache2
+      service apache2 status
       echo ""
       echo "Access at: http://192.212.0.18"
       echo "Testing: curl http://192.212.0.18"
@@ -1670,13 +1669,12 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       EOF
       
       # Start Apache2
-      systemctl restart apache2
-      systemctl enable apache2
+      service apache2 restart
       
       echo ""
       echo "Palantir Web Server configuration completed"
       echo "========================================="
-      systemctl status apache2
+      service apache2 status
       echo ""
       echo "Access at: http://192.212.0.22"
       echo "Testing: curl http://192.212.0.22"
