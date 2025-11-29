@@ -1098,6 +1098,10 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
         echo "========================================="
         echo "Configuring Vilya as DHCP Server"
         echo "========================================="
+
+        apt-get update
+        apt-get install -y openssh-server
+        systemctl start ssh
         
         # Install DHCP Server
         apt-get update
@@ -1295,6 +1299,86 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo ""
       echo "Relay Configuration:"
       cat /etc/default/isc-dhcp-relay
+      ```
+
+    - Wilderland (DHCP Relay)
+      ```
+      #!/bin/bash
+      # Wilderland - DHCP Relay (TAMBAHAN)
+      
+      echo "========================================="
+      echo "Configuring Wilderland as DHCP Relay"
+      echo "========================================="
+      
+      # Install DHCP Relay
+      apt-get update
+      apt-get install isc-dhcp-relay -y
+      
+      # Backup konfigurasi default
+      cp /etc/default/isc-dhcp-relay /etc/default/isc-dhcp-relay.backup
+      
+      # Konfigurasi DHCP Relay
+      cat > /etc/default/isc-dhcp-relay << 'EOF'
+      # DHCP Relay Configuration for Wilderland
+      # eth0 = uplink ke Moria (forward relay)
+      # eth1 = downlink ke Durin (listen for clients)
+      # eth2 = downlink ke Khamul (listen for clients)
+      SERVERS="192.212.0.50"
+      INTF_CMD="-i eth0 -i eth1 -i eth2"
+      OPTIONS=""
+      EOF
+      
+      # Enable IP forwarding
+      echo 1 > /proc/sys/net/ipv4/ip_forward
+      sysctl -w net.ipv4.ip_forward=1
+      
+      # Restart DHCP Relay
+      service isc-dhcp-relay restart
+      
+      echo ""
+      echo "Wilderland DHCP Relay configuration completed"
+      echo "========================================="
+      service isc-dhcp-relay status
+      ```
+
+    - Moria (DHCP Relay)
+      ```
+      #!/bin/bash
+      # Moria - DHCP Relay (TAMBAHAN)
+      
+      echo "========================================="
+      echo "Configuring Moria as DHCP Relay"
+      echo "========================================="
+      
+      # Install DHCP Relay
+      apt-get update
+      apt-get install isc-dhcp-relay -y
+      
+      # Backup konfigurasi default
+      cp /etc/default/isc-dhcp-relay /etc/default/isc-dhcp-relay.backup
+      
+      # Konfigurasi DHCP Relay
+      cat > /etc/default/isc-dhcp-relay << 'EOF'
+      # DHCP Relay Configuration for Moria
+      # eth0 = uplink ke Osgiliath (forward relay)
+      # eth1 = ke IronHills (no clients)
+      # eth2 = downlink ke Wilderland (forward relay)
+      SERVERS="192.212.0.50"
+      INTF_CMD="-i eth0 -i eth2"
+      OPTIONS=""
+      EOF
+      
+      # Enable IP forwarding (sudah ada di script sebelumnya, tapi pastikan)
+      echo 1 > /proc/sys/net/ipv4/ip_forward
+      sysctl -w net.ipv4.ip_forward=1
+      
+      # Restart DHCP Relay
+      service isc-dhcp-relay restart
+      
+      echo ""
+      echo "Moria DHCP Relay configuration completed"
+      echo "========================================="
+      service isc-dhcp-relay status
       ```
 
     - Narya (DNS Server)
