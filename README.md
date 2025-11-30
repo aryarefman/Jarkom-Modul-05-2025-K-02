@@ -2683,100 +2683,49 @@ Agar jaringan aman, terapkan aturan firewall berikut.
     - Palantir
       ```
       #!/bin/bash
-      # Palantir FINAL — Port Scan Detection (GNS3 Stable Version)
+      # PALANTIR — RULE 5 + 6
+      echo "===================================================="
+      echo "   PALANTIR — FINAL COMBO RULE 5 + RULE 6"
+      echo "===================================================="
       
-      echo "========================================="
-      echo "  PALANTIR FINAL - PORT SCAN DETECTION"
-      echo "========================================="
-      
-      apt-get update -qq
-      apt-get install -y rsyslog >/dev/null 2>&1
-      
-      # Restart rsyslog (karena GNS3 tidak pakai systemd)
-      pkill rsyslogd 2>/dev/null
-      rsyslogd
-      echo "✓ rsyslog aktif (kern.log ON)"
-      
-      echo ""
-      echo "[1/5] Flushing iptables & xt_recent..."
-      iptables -F
+      # 1. Flush dulu semua rule lama biar bersih
+      iptables -F INPUT
       iptables -X
       iptables -t nat -F
-      iptables -t nat -X
       
-      echo clear > /proc/net/xt_recent/portscan 2>/dev/null
-      echo clear > /proc/net/xt_recent/blocklist 2>/dev/null
-      
-      echo "✓ Cleared"
-      echo ""
-      
-      echo "[2/5] Membuat chain PORT_SCAN..."
+      # 2. Chain khusus
       iptables -N PORT_SCAN 2>/dev/null || iptables -F PORT_SCAN
       
-      echo "[3/5] Install rules..."
-      
-      # BLOCKLIST: IP yang pernah ketangkap
-      iptables -I INPUT 1 -m recent --rcheck --name blocklist -j DROP
-      
-      # Allow loopback
+      # 3. Rule wajib dasar
       iptables -A INPUT -i lo -j ACCEPT
-      
-      # Allow established
       iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
       
-      # ==============================
-      #  TRACK KONKESI (SYN-only FIX)
-      # ==============================
+      # 4. BLOCKLIST — yang pernah kena scan langsung mati total
+      iptables -A INPUT -m recent --rcheck --name blocklist -j DROP
       
-      # SET setiap SYN baru ke recent list
-      iptables -A INPUT -p tcp --syn \
-          -m recent --set --name portscan
+      # 5. Tracking port scan
+      iptables -A INPUT -p tcp --syn -m recent --set --name portscan
+      iptables -A INPUT -p tcp --syn -m recent --update --seconds 20 --hitcount 16 --name portscan -j PORT_SCAN
       
-      # Jika 16 koneksi SYN dalam 20 detik → trigger
-      iptables -A INPUT -p tcp --syn \
-          -m recent --update --seconds 20 --hitcount 16 --name portscan \
-          -j PORT_SCAN
+      # 6. ACCEPT semua koneksi NEW ke port 80 (INI YANG BIKIN NC SEBELUM SCAN HIJAU!)
+      iptables -A INPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
       
-      # ==============================
-      # PORT_SCAN CHAIN
-      # ==============================
+      # 7. Rule 5 — Time-based access (ELF & HUMAN) — TETAP UTUH
+      iptables -A INPUT -p tcp --dport 80 -s 192.212.0.128/25 -m time --timestart 07:00 --timestop 15:00 --weekdays Mon,Tue,Wed,Thu,Fri,Sat,Sun -j ACCEPT
+      iptables -A INPUT -p tcp --dport 80 -s 192.212.1.0/24   -m time --timestart 17:00 --timestop 23:00 --weekdays Mon,Tue,Wed,Thu,Fri,Sat,Sun -j ACCEPT
       
-      # Log ke kernel → rsyslog → /var/log/kern.log
-      iptables -A PORT_SCAN \
-          -m limit --limit 2/sec --limit-burst 10 \
-          -j LOG --log-prefix "PORT_SCAN_DETECTED: " --log-level 4
+      # 8. Drop akses HTTP di luar jam (Rule 5)
+      iptables -A INPUT -p tcp --dport 80 -s 192.212.0.128/25 -j DROP
+      iptables -A INPUT -p tcp --dport 80 -s 192.212.1.0/24   -j DROP
       
-      # Masukkan IP ke blocklist
+      # 9. PORT_SCAN chain isi
+      iptables -F PORT_SCAN
+      iptables -A PORT_SCAN -j LOG --log-prefix "PORT_SCAN_DETECTED: " --log-level 4
       iptables -A PORT_SCAN -m recent --set --name blocklist
-      
-      # DROP attacker
       iptables -A PORT_SCAN -j DROP
       
-      # ==============================
-      #  DROP DEFAULT UNTUK TCP
-      # ==============================
-      
-      # Untuk mencegah TCP RST (refused) default kernel
-      iptables -A INPUT -p tcp -j DROP
-      
-      # Default ACCEPT untuk OUTPUT/FORWARD
-      iptables -P OUTPUT ACCEPT
-      iptables -P FORWARD ACCEPT
-      
-      echo "✓ Rules installed"
-      echo ""
-      
-      echo "[4/5] Verifikasi IPTABLES:"
-      iptables -L INPUT -n -v --line-numbers
-      echo ""
-      iptables -L PORT_SCAN -n -v
-      echo ""
-      
-      echo "[5/5] Log locations:"
-      echo "  tail -f /var/log/kern.log"
-      echo "========================================="
-      echo " PALANTIR READY — Scan akan ke-DROP + Logged"
-      echo "========================================="
+      # 10. Default policy
+      iptables -A INPUT -j ACCEPT
       ```
 
     - Uji
