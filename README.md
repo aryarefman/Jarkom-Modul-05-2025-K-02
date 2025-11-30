@@ -1384,7 +1384,7 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
     - Narya (DNS Server)
       ```
       #!/bin/bash
-      # Narya - DNS Server (FIXED - Direct Named Daemon)
+      # Narya - DNS Server (FIXED untuk Internet Access)
       
       echo "========================================="
       echo "Configuring Narya as DNS Server"
@@ -1397,24 +1397,39 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       apt-get install -y bind9 bind9utils dnsutils
       
       # Backup konfigurasi default
-      cp /etc/bind/named.conf.options /etc/bind/named.conf.options.backup
+      cp /etc/bind/named.conf.options /etc/bind/named.conf.options.backup 2>/dev/null
       
-      # Konfigurasi BIND9
+      # Konfigurasi BIND9 - FIXED dengan forwarders ke Google DNS
       cat > /etc/bind/named.conf.options << 'EOF'
       options {
           directory "/var/cache/bind";
       
+          # Forward queries ke Google DNS untuk internet
           forwarders {
               8.8.8.8;
               8.8.4.4;
           };
       
-          dnssec-validation auto;
+          # Allow queries dari semua subnet Alliance
+          allow-query { 
+              localhost;
+              192.212.0.0/23;  # Semua subnet Alliance
+          };
+          
+          # Listen di semua interface
+          listen-on { any; };
           listen-on-v6 { any; };
           
-          allow-query { any; };
+          # Security settings
+          dnssec-validation auto;
           auth-nxdomain no;
-          listen-on { any; };
+          
+          # Allow recursion untuk clients
+          recursion yes;
+          allow-recursion { 
+              localhost;
+              192.212.0.0/23;
+          };
       };
       EOF
       
@@ -1529,7 +1544,7 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       
       # Start BIND9 named daemon directly
       echo "Starting BIND9 named daemon..."
-      /usr/sbin/named -u bind -c /etc/bind/named.conf &
+      /usr/sbin/named -u bind -c /etc/bind/named.conf
       
       # Tunggu BIND9 siap
       sleep 3
@@ -1554,28 +1569,25 @@ Tugasmu adalah membangun infrastruktur jaringan Aliansi, amankan jalur komunikas
       echo "========================================="
       echo ""
       
-      echo "Test 1: narya.alliance.local"
+      echo "Test 1: Local domain - narya.alliance.local"
       dig @127.0.0.1 narya.alliance.local +short
       
       echo ""
-      echo "Test 2: ironhills.alliance.local"
-      dig @127.0.0.1 ironhills.alliance.local +short
+      echo "Test 2: Internet domain - google.com (via forwarders)"
+      dig @127.0.0.1 google.com +short
       
       echo ""
-      echo "Test 3: vilya.alliance.local"
-      dig @127.0.0.1 vilya.alliance.local +short
+      echo "Test 3: Direct ping to internet"
+      ping -c 2 8.8.8.8
       
       echo ""
-      echo "Test 4: durin.alliance.local"
-      dig @127.0.0.1 durin.alliance.local +short
-      
-      echo ""
-      echo "Test 5: Reverse lookup 192.212.0.51"
-      dig @127.0.0.1 -x 192.212.0.51 +short
+      echo "Test 4: Ping google.com"
+      ping -c 2 google.com
       
       echo ""
       echo "========================================="
-      echo "DNS Configuration Complete!"
+      echo "✓ DNS Configuration Complete!"
+      echo "✓ Narya can now resolve both local and internet domains"
       echo "========================================="
       ```
 
