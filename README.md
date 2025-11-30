@@ -2894,37 +2894,43 @@ Agar jaringan aman, terapkan aturan firewall berikut.
     - Ironhills
       ```
       #!/bin/bash
-      # IronHills - Rule 7 FINAL & BENAR 100%
-      # Maksimal 3 koneksi TCP simultan per IP ke port 80
-      # AMAN — Hanya bersihkan rule 7 saja, rule lain tetap hidup
+      clear
+      echo "============================================================"
+      echo " IRONHILLS — RULE 4 (Weekend) + RULE 7 (Max 3 Conn)"
+      echo "============================================================"
       
-      echo "=================================================="
-      echo " IRONHILLS — RULE 7: Max 3 concurrent connections"
-      echo "=================================================="
+      # 1. PASTIKAN RULE 4 (WEEKEND) SUDAH ADA & TIDAK DIHAPUS
+      # Kalau belum ada, pasang dulu (biar aman)
+      iptables -C INPUT -p tcp --dport 80 -s 192.212.0.64/26 -m time --weekdays Sat,Sun -j ACCEPT 2>/dev/null || \
+          iptables -A INPUT -p tcp --dport 80 -s 192.212.0.64/26 -m time --weekdays Sat,Sun -j ACCEPT
       
-      # 1. Bersihkan rule 7 lama (biar tidak duplikat)
+      iptables -C INPUT -p tcp --dport 80 -s 192.212.0.56/29 -m time --weekdays Sat,Sun -j ACCEPT 2>/dev/null || \
+          iptables -A INPUT -p tcp --dport 80 -s 192.212.0.56/29 -m time --weekdays Sat,Sun -j ACCEPT
+      
+      iptables -C INPUT -p tcp --dport 80 -s 192.212.1.0/24   -m time --weekdays Sat,Sun -j ACCEPT 2>/dev/null || \
+          iptables -A INPUT -p tcp --dport 80 -s 192.212.1.0/24   -m time --weekdays Sat,Sun -j ACCEPT
+      
+      # Drop di hari kerja (Rule 4)
+      iptables -C INPUT -p tcp --dport 80 -s 192.212.0.64/26 -j DROP 2>/dev/null || \
+          iptables -A INPUT -p tcp --dport 80 -s 192.212.0.64/26 -j DROP
+      iptables -C INPUT -p tcp --dport 80 -s 192.212.0.56/29 -j DROP 2>/dev/null || \
+          iptables -A INPUT -p tcp --dport 80 -s 192.212.0.56/29 -j DROP
+      iptables -C INPUT -p tcp --dport 80 -s 192.212.1.0/24   -j DROP 2>/dev/null || \
+          iptables -A INPUT -p tcp --dport 80 -s 192.212.1.0/24   -j DROP
+      
+      # 2. HAPUS RULE 7 LAMA kalau pernah ada (biar tidak duplikat)
       iptables -D INPUT -p tcp --dport 80 -m connlimit --connlimit-above 3 -j REJECT 2>/dev/null || true
       iptables -D INPUT -p tcp --dport 80 -m connlimit --connlimit-above 3 -j DROP 2>/dev/null || true
       iptables -D INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || true
       
-      # 2. Pasang rule di posisi yang BENAR (setelah established & loopback)
-      #    Biasanya posisi 3 dan 4 di chain INPUT
+      # 3. PASANG RULE 7 DI POSISI YANG BENAR (setelah established & loopback)
+      #    → posisi 3 = connlimit, posisi 4 = ACCEPT normal
       iptables -I INPUT 3 -p tcp --dport 80 -m connlimit --connlimit-above 3 --connlimit-mask 32 -j REJECT --reject-with tcp-reset
       iptables -I INPUT 4 -p tcp --dport 80 -j ACCEPT
-      
-      echo "Rule 7 SUDAH AKTIF & SEMPURNA"
-      echo ""
-      echo "Detail:"
-      echo "→ Maksimal 3 koneksi aktif bersamaan per IP"
-      echo "→ Koneksi ke-4 dan seterusnya → langsung TCP Reset"
-      echo "→ Rule 1–6 tetap hidup (port-scan, time-based, dll aman)"
-      echo ""
-      iptables -L INPUT -n -v --line-numbers | grep -E "(80|connlimit|REJECT|ACCEPT)"
-      echo ""
-      echo "Testing yang benar:"
-      echo "   ab -n 50 -c 10 http://192.212.0.18/   → harus banyak 'Connection refused'"
-      echo "   python3 concurrent test               → maksimal 3 sukses"
-      echo "=================================================="
+
+      echo "============================================================"
+      echo "Selesai"
+      echo "============================================================"
       ```
       
     - Uji
