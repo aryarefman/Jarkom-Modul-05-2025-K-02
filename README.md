@@ -2414,25 +2414,30 @@ Agar jaringan aman, terapkan aturan firewall berikut.
       ```
       
     - Uji
+      - Install netcat
+        ```
+        apt-get update && apt-get install -y netcat-traditional
+        ``` 
       - Dari Vilya (192.212.0.50) - Should SUCCESS
         ```
-        # Test UDP DNS
-        dig @192.212.0.51 narya.alliance.local
-        
-        # Test dengan nslookup
-        nslookup narya.alliance.local 192.212.0.51
+        echo "Testing TCP port 53:"
+        nc -zv -n 192.212.0.51 53
         ```
-        <img width="780" height="719" alt="image" src="https://github.com/user-attachments/assets/7677b108-2b52-4046-8d98-9c66a75f6e1c" />
-        
+        <img width="415" height="95" alt="image" src="https://github.com/user-attachments/assets/55bcdbeb-eeb8-4278-819b-317ba4f276e7" />
+
       - Dari CLIENT (Durin) - Should FAIL
         ```
-        # Test UDP DNS
-        dig @192.212.0.51 narya.alliance.local +timeout=3
-        
-        # Test dengan nslookup
-        nslookup narya.alliance.local 192.212.0.51
+        echo "Testing TCP port 53:"
+        timeout 5 nc -zv -n 192.212.0.51 53
         ```
-        <img width="791" height="360" alt="image" src="https://github.com/user-attachments/assets/627b6b3a-3384-40ad-b10d-3ab480752370" />
+        <img width="375" height="96" alt="image" src="https://github.com/user-attachments/assets/a3eb59de-61ea-4cdb-ab4d-9cbacda46da1" />
+
+    - Hapus Rules
+      ```
+      iptables -F INPUT
+      iptables -P INPUT ACCEPT
+      iptables -L INPUT -n -v
+      ```
 
 4. Aktivitas mencurigakan terdeteksi di IronHills. Berdasarkan dekrit Raja, IronHills hanya boleh diakses pada Akhir Pekan (Sabtu & Minggu).
     - Akses hanya diizinkan untuk Faksi Kurcaci & Pengkhianat (Durin & Khamul) serta Faksi Manusia (Elendil & Isildur).
