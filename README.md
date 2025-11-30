@@ -2383,6 +2383,10 @@ Agar jaringan aman, terapkan aturan firewall berikut.
 3. Agar lokasi pasukan tidak bocor, hanya Vilya yang dapat mengakses Narya (DNS).
     - Gunakan nc (netcat) untuk memastikan akses port DNS (53) ini.
     - [Hapus aturan ini setelah pengujian agar internet lancar untuk install paket]
+    - Install netcat untuk uji
+      ```
+      apt-get update && apt-get install -y netcat-traditional
+      ``` 
     - Narya
       ```
       #!/bin/bash
