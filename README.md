@@ -2680,6 +2680,248 @@ Agar jaringan aman, terapkan aturan firewall berikut.
     - Web server harus memblokir scan port yang melebihi 15 port dalam waktu 20 detik.
     - Penyerang yang terblokir tidak dapat melakukan ping, nc, atau curl ke Palantir.
     - Catat log iptables dengan prefix "PORT_SCAN_DETECTED".
+    - Palantir
+      ```
+      #!/bin/bash
+      # Palantir FINAL — Port Scan Detection (GNS3 Stable Version)
+      
+      echo "========================================="
+      echo "  PALANTIR FINAL - PORT SCAN DETECTION"
+      echo "========================================="
+      
+      apt-get update -qq
+      apt-get install -y rsyslog >/dev/null 2>&1
+      
+      # Restart rsyslog (karena GNS3 tidak pakai systemd)
+      pkill rsyslogd 2>/dev/null
+      rsyslogd
+      echo "✓ rsyslog aktif (kern.log ON)"
+      
+      echo ""
+      echo "[1/5] Flushing iptables & xt_recent..."
+      iptables -F
+      iptables -X
+      iptables -t nat -F
+      iptables -t nat -X
+      
+      echo clear > /proc/net/xt_recent/portscan 2>/dev/null
+      echo clear > /proc/net/xt_recent/blocklist 2>/dev/null
+      
+      echo "✓ Cleared"
+      echo ""
+      
+      echo "[2/5] Membuat chain PORT_SCAN..."
+      iptables -N PORT_SCAN 2>/dev/null || iptables -F PORT_SCAN
+      
+      echo "[3/5] Install rules..."
+      
+      # BLOCKLIST: IP yang pernah ketangkap
+      iptables -I INPUT 1 -m recent --rcheck --name blocklist -j DROP
+      
+      # Allow loopback
+      iptables -A INPUT -i lo -j ACCEPT
+      
+      # Allow established
+      iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      
+      # ==============================
+      #  TRACK KONKESI (SYN-only FIX)
+      # ==============================
+      
+      # SET setiap SYN baru ke recent list
+      iptables -A INPUT -p tcp --syn \
+          -m recent --set --name portscan
+      
+      # Jika 16 koneksi SYN dalam 20 detik → trigger
+      iptables -A INPUT -p tcp --syn \
+          -m recent --update --seconds 20 --hitcount 16 --name portscan \
+          -j PORT_SCAN
+      
+      # ==============================
+      # PORT_SCAN CHAIN
+      # ==============================
+      
+      # Log ke kernel → rsyslog → /var/log/kern.log
+      iptables -A PORT_SCAN \
+          -m limit --limit 2/sec --limit-burst 10 \
+          -j LOG --log-prefix "PORT_SCAN_DETECTED: " --log-level 4
+      
+      # Masukkan IP ke blocklist
+      iptables -A PORT_SCAN -m recent --set --name blocklist
+      
+      # DROP attacker
+      iptables -A PORT_SCAN -j DROP
+      
+      # ==============================
+      #  DROP DEFAULT UNTUK TCP
+      # ==============================
+      
+      # Untuk mencegah TCP RST (refused) default kernel
+      iptables -A INPUT -p tcp -j DROP
+      
+      # Default ACCEPT untuk OUTPUT/FORWARD
+      iptables -P OUTPUT ACCEPT
+      iptables -P FORWARD ACCEPT
+      
+      echo "✓ Rules installed"
+      echo ""
+      
+      echo "[4/5] Verifikasi IPTABLES:"
+      iptables -L INPUT -n -v --line-numbers
+      echo ""
+      iptables -L PORT_SCAN -n -v
+      echo ""
+      
+      echo "[5/5] Log locations:"
+      echo "  tail -f /var/log/kern.log"
+      echo "========================================="
+      echo " PALANTIR READY — Scan akan ke-DROP + Logged"
+      echo "========================================="
+      ```
+
+    - Uji
+      - Elendil
+        ```
+        #!/bin/bash
+        # Test from Elendil - Port Scan Simulation (STRICT TEST)
+        
+        echo "========================================="
+        echo "   RULE 6: Port Scan Detection Test"
+        echo "========================================="
+        echo "Testing from: Elendil (Human Faction)"
+        echo "Target: Palantir (192.212.0.22)"
+        echo "========================================="
+        
+        PALANTIR="192.212.0.22"
+        
+        # Install tools
+        if ! command -v nmap >/dev/null 2>&1; then
+            echo "Installing nmap..."
+            apt-get update -qq
+            apt-get install -y nmap netcat-traditional curl
+        fi
+        
+        echo ""
+        echo "========================================="
+        echo "PHASE 1: Pre-Scan Connectivity Test"
+        echo "========================================="
+        
+        echo ""
+        echo "Test 1.1: PING test"
+        ping -c 3 -W 2 $PALANTIR
+        PING_BEFORE=$?
+        if [ $PING_BEFORE -eq 0 ]; then
+            echo "✓ Ping: SUCCESS"
+        else
+            echo "✗ Ping: FAILED"
+        fi
+        
+        echo ""
+        echo "Test 1.2: HTTP test"
+        curl -s -m 5 http://$PALANTIR | head -5
+        HTTP_BEFORE=$?
+        if [ $HTTP_BEFORE -eq 0 ]; then
+            echo "✓ HTTP: SUCCESS"
+        else
+            echo "✗ HTTP: FAILED"
+        fi
+        
+        echo ""
+        echo "Test 1.3: Netcat test (port 80)"
+        timeout 3 nc -zv $PALANTIR 80
+        NC_BEFORE=$?
+        if [ $NC_BEFORE -eq 0 ]; then
+            echo "✓ NC: SUCCESS"
+        else
+            echo "✗ NC: FAILED"
+        fi
+        
+        sleep 2
+        
+        echo ""
+        echo "========================================="
+        echo "PHASE 2: PORT SCAN (This will trigger detection)"
+        echo "========================================="
+        echo "⚠️  WARNING: Performing port scan 1-100"
+        echo "⚠️  This WILL block this IP completely!"
+        echo ""
+        
+        # Aggressive scan to trigger quickly
+        nmap -T4 --max-retries 0 -p 1-100 $PALANTIR
+        
+        echo ""
+        echo "✓ Port scan completed"
+        echo "Waiting 5 seconds for rules to apply..."
+        sleep 5
+        
+        echo ""
+        echo "========================================="
+        echo "PHASE 3: Post-Scan Connectivity Test"
+        echo "========================================="
+        echo "ALL tests below should FAIL (blocked):"
+        
+        echo ""
+        echo "Test 3.1: PING test (should FAIL)"
+        timeout 5 ping -c 3 -W 2 $PALANTIR
+        PING_AFTER=$?
+        if [ $PING_AFTER -ne 0 ]; then
+            echo "✓ Ping: BLOCKED (as expected)"
+        else
+            echo "✗ Ping: NOT BLOCKED (rule failed!)"
+        fi
+        
+        echo ""
+        echo "Test 3.2: HTTP test (should FAIL)"
+        timeout 5 curl -s http://$PALANTIR
+        HTTP_AFTER=$?
+        if [ $HTTP_AFTER -ne 0 ]; then
+            echo "✓ HTTP: BLOCKED (as expected)"
+        else
+            echo "✗ HTTP: NOT BLOCKED (rule failed!)"
+        fi
+        
+        echo ""
+        echo "Test 3.3: Netcat test (should FAIL)"
+        timeout 5 nc -zv $PALANTIR 80
+        NC_AFTER=$?
+        if [ $NC_AFTER -ne 0 ]; then
+            echo "✓ NC: BLOCKED (as expected)"
+        else
+            echo "✗ NC: NOT BLOCKED (rule failed!)"
+        fi
+        
+        echo ""
+        echo "Test 3.4: Multiple protocols test"
+        echo "Trying ICMP..."
+        timeout 3 ping -c 1 $PALANTIR >/dev/null 2>&1
+        [ $? -ne 0 ] && echo "  ✓ ICMP blocked" || echo "  ✗ ICMP not blocked"
+        
+        echo "Trying TCP port 22..."
+        timeout 3 nc -zv $PALANTIR 22 >/dev/null 2>&1
+        [ $? -ne 0 ] && echo "  ✓ SSH blocked" || echo "  ✗ SSH not blocked"
+        
+        echo "Trying TCP port 443..."
+        timeout 3 nc -zv $PALANTIR 443 >/dev/null 2>&1
+        [ $? -ne 0 ] && echo "  ✓ HTTPS blocked" || echo "  ✗ HTTPS not blocked"
+        
+        echo ""
+        echo "========================================="
+        echo "PHASE 4: Summary"
+        echo "========================================="
+        
+        echo ""
+        echo "BEFORE Port Scan:"
+        echo "  Ping:  $([ $PING_BEFORE -eq 0 ] && echo '✓ Working' || echo '✗ Failed')"
+        echo "  HTTP:  $([ $HTTP_BEFORE -eq 0 ] && echo '✓ Working' || echo '✗ Failed')"
+        echo "  NC:    $([ $NC_BEFORE -eq 0 ] && echo '✓ Working' || echo '✗ Failed')"
+        
+        echo ""
+        echo "AFTER Port Scan:"
+        echo "  Ping:  $([ $PING_AFTER -ne 0 ] && echo '✓ BLOCKED' || echo '✗ NOT BLOCKED')"
+        echo "  HTTP:  $([ $HTTP_AFTER -ne 0 ] && echo '✓ BLOCKED' || echo '✗ NOT BLOCKED')"
+        echo "  NC:    $([ $NC_AFTER -ne 0 ] && echo '✓ BLOCKED' || echo '✗ NOT BLOCKED')"
+        ```
+        <img width="377" height="230" alt="Screenshot 2025-11-30 174840" src="https://github.com/user-attachments/assets/525bf33f-d001-42f7-9072-f95a8391af37" />
 
 7. Hari Sabtu tiba. Akses ke IronHills dibatasi untuk mencegah overload.
     - Akses ke IronHills hanya boleh berasal dari 3 koneksi aktif per IP dalam waktu bersamaan.
@@ -2779,5 +3021,7 @@ Agar jaringan aman, terapkan aturan firewall berikut.
         echo "Pas demo tinggal jalankan script ini → dosen langsung kasih 100+"
         echo "===================================================="
         ```
+        <img width="591" height="435" alt="Screenshot 2025-11-30 181651" src="https://github.com/user-attachments/assets/d56b8018-2346-4c00-aacc-a4c1bfeca74b" />
+
 8. Selama uji coba, terdeteksi anomali. Setiap paket yang dikirim Vilya menuju Khamul, ternyata dibelokkan oleh sihir hitam menuju IronHills.
     - Gunakan nc untuk memastikan alur pengalihan ini (Redirect trafik dari Client ke Server).
